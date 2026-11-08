@@ -3,12 +3,14 @@ package ra.edu.hw.md04.ss10.service;
 import java.math.BigDecimal;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import ra.edu.hw.md04.ss10.entity.Medicine;
 import ra.edu.hw.md04.ss10.entity.ProcessedOrder;
+import ra.edu.hw.md04.ss10.event.MedicineImportedEvent;
 import ra.edu.hw.md04.ss10.event.OrderEvent;
 import ra.edu.hw.md04.ss10.repository.MedicineRepository;
 import ra.edu.hw.md04.ss10.repository.ProcessedOrderRepository;
@@ -17,13 +19,16 @@ import ra.edu.hw.md04.ss10.repository.ProcessedOrderRepository;
 public class InventoryService {
     private final MedicineRepository medicineRepository;
     private final ProcessedOrderRepository processedOrderRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     public InventoryService(
         MedicineRepository medicineRepository,
-        ProcessedOrderRepository processedOrderRepository
+        ProcessedOrderRepository processedOrderRepository,
+        ApplicationEventPublisher eventPublisher
     ) {
         this.medicineRepository = medicineRepository;
         this.processedOrderRepository = processedOrderRepository;
+        this.eventPublisher = eventPublisher;
     }
 
     @Cacheable(value = "medicines", key = "#id")
@@ -43,6 +48,24 @@ public class InventoryService {
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Medicine not found"));
         medicine.setPrice(price);
         return medicineRepository.save(medicine);
+    }
+
+    @Transactional
+    @CacheEvict(value = "medicines", key = "#id")
+    public Medicine importStock(String id, int quantity) {
+        if (quantity <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Import quantity must be greater than zero");
+        }
+
+        int updatedRows = medicineRepository.addStock(id, quantity);
+        if (updatedRows == 0) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Medicine not found");
+        }
+
+        Medicine medicine = medicineRepository.findById(id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Medicine not found"));
+        eventPublisher.publishEvent(new MedicineImportedEvent(medicine.getMedicineName(), quantity));
+        return medicine;
     }
 
     @Transactional

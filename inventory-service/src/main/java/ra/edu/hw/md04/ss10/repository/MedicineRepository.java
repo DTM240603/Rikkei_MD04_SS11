@@ -10,6 +10,14 @@ public interface MedicineRepository extends JpaRepository<Medicine, String> {
     @Modifying
     @Query("""
         update Medicine medicine
+        set medicine.stock = medicine.stock + :quantity
+        where medicine.medicineId = :medicineId
+        """)
+    int addStock(@Param("medicineId") String medicineId, @Param("quantity") int quantity);
+
+    @Modifying
+    @Query("""
+        update Medicine medicine
         set medicine.stock = medicine.stock - :quantity
         where medicine.medicineId = :medicineId
           and medicine.stock >= :quantity

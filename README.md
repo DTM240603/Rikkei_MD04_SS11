@@ -39,6 +39,31 @@ Invoke-RestMethod -Method Put `
 
 Override the Redis host and port with `REDIS_HOST` and `REDIS_PORT`.
 
+## Redis Pub/Sub alerts
+
+The inventory service subscribes to the Redis channel `pharmacy-alerts`. Publish
+an alert with:
+
+```powershell
+Invoke-RestMethod -Method Post `
+  -Uri http://localhost:8080/api/v1/alerts `
+  -ContentType "application/json" `
+  -Body '{"topicListen":"pharmacy-alerts","type":"IMPORT","message":"Đã nhập 100 hộp Panadol"}'
+```
+
+The API publishes the JSON message immediately and the service prints received
+alerts to its console. Redis Pub/Sub is fire-and-forget; messages are not retained
+for subscribers that are offline.
+
+Import stock to update the database and automatically publish an `IMPORT` alert
+after the transaction commits:
+
+```powershell
+Invoke-RestMethod -Method Put `
+  -Uri http://localhost:8080/api/v1/inventory/medicines/MED-001/stock/import `
+  -ContentType "application/json" -Body '{"quantity":100}'
+```
+
 ## Create topics
 
 ```bash

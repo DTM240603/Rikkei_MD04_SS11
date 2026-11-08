@@ -1,5 +1,6 @@
 package ra.edu.hw.md04.ss10.service;
 
+import java.math.BigDecimal;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
@@ -29,6 +30,19 @@ public class InventoryService {
     public Medicine getMedicine(String id) {
         return medicineRepository.findById(id)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Medicine not found"));
+    }
+
+    @Transactional
+    @CacheEvict(value = "medicines", key = "#id")
+    public Medicine updatePrice(String id, BigDecimal price) {
+        if (price == null || price.signum() < 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Price must be zero or greater");
+        }
+
+        Medicine medicine = medicineRepository.findById(id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Medicine not found"));
+        medicine.setPrice(price);
+        return medicineRepository.save(medicine);
     }
 
     @Transactional

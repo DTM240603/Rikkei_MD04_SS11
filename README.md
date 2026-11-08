@@ -28,9 +28,16 @@ Invoke-RestMethod -Uri http://localhost:8080/api/v1/inventory/medicines/MED-001
 ```
 
 The first request reads the medicine from PostgreSQL; subsequent requests use
-the `medicines` Redis cache. The cache entry is evicted when an order changes
-that medicine's stock. Override the Redis host and port with `REDIS_HOST` and
-`REDIS_PORT`.
+the `medicines` Redis cache, which expires after 60 minutes. The cache entry is
+evicted when an order changes that medicine's stock or when its price is updated:
+
+```powershell
+Invoke-RestMethod -Method Put `
+  -Uri http://localhost:8080/api/v1/inventory/medicines/MED-001/price `
+  -ContentType "application/json" -Body '{"price":15000.00}'
+```
+
+Override the Redis host and port with `REDIS_HOST` and `REDIS_PORT`.
 
 ## Create topics
 

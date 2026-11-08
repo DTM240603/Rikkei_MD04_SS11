@@ -1,5 +1,6 @@
 package ra.edu.hw.md04.ss10.entity;
 
+import java.math.BigDecimal;
 import java.io.Serializable;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -21,6 +22,9 @@ public class Medicine implements Serializable {
     @Column(nullable = false)
     private int stock;
 
+    @Column(precision = 12, scale = 2)
+    private BigDecimal price;
+
     protected Medicine() {
     }
 
@@ -40,5 +44,13 @@ public class Medicine implements Serializable {
 
     public int getStock() {
         return stock;
+    }
+
+    public BigDecimal getPrice() {
+        return price;
+    }
+
+    public void setPrice(BigDecimal price) {
+        this.price = price;
     }
 }
